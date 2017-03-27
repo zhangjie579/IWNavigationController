@@ -14,6 +14,44 @@
 
 @implementation IWNavigationController
 
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    //1.获得系统pop手势
+    UIGestureRecognizer *pop = self.interactivePopGestureRecognizer;
+    if (pop == nil) return;
+    
+    //2.获取手势添加在哪个view上
+    UIView *gestView = pop.view;
+    if (gestView == nil) return;
+    
+    //通过runtime获得属性name
+    //    unsigned int outCount = 0;
+    //    Ivar *ivas = class_copyIvarList([UIGestureRecognizer class], &outCount);
+    //    for (NSInteger i = 0; i < outCount; i++) {
+    //        Ivar ivar = ivas[i];
+    //
+    //        NSString *name = [NSString stringWithUTF8String:ivar_getName(ivar)];
+    //
+    //        NSLog(@"%@", name);
+    //    }
+    
+    //3.获取target/action
+    NSArray *targets = [pop valueForKey:@"_targets"];
+    id targetObjc = targets.firstObject;
+    if (targetObjc == nil) return;
+    
+    // 3.2.取出target
+    id target = [targetObjc valueForKey:@"target"];
+    if (target == nil) return;
+    
+    // 3.3.取出Action
+    SEL action = @selector(handleNavigationTransition:);
+    
+    UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:target action:action];
+    [gestView addGestureRecognizer:pan];
+}
+
 +(void)initialize
 {
     // 1.设置导航栏主题
@@ -64,7 +102,7 @@
     
 #warning 注意:setBackgroundImage和setShadowImage就能去掉导航栏底部的黑线
     // 设置背景
-    [navBar setBackgroundImage:[CornerSettingHelp createImageWithColor:[UIColor colorWithRed:52/255.0 green:157/255.0 blue:246/255.0 alpha:1]] forBarMetrics:UIBarMetricsDefault];
+    [navBar setBackgroundImage:[self createImageWithColor:[UIColor colorWithRed:52/255.0 green:157/255.0 blue:246/255.0 alpha:1]] forBarMetrics:UIBarMetricsDefault];
     [UIApplication sharedApplication].statusBarStyle = UIStatusBarStyleLightContent;
     
     //清除边框，设置一张空的图片(隐藏底部阴影条，传递一个空图片的UIImage对象)
@@ -111,6 +149,19 @@
     button.frame = (CGRect){CGPointZero, button.currentBackgroundImage.size};
     [button addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
     return [[UIBarButtonItem alloc] initWithCustomView:button];
+}
+
+//颜色转换成图片
++ (UIImage *)createImageWithColor:(UIColor *) color;
+{
+    CGRect rect=CGRectMake(0.0f, 0.0f, 1.0f, 1.0f);
+    UIGraphicsBeginImageContext(rect.size);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, [color CGColor]);
+    CGContextFillRect(context, rect);
+    UIImage *theImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return theImage;
 }
 
 @end
